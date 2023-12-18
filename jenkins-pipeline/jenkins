@@ -1,0 +1,60 @@
+pipeline {
+  agent any
+  options {
+    buildDiscarder(logRotator(numToKeepStr: '5'))
+  }
+  environment {
+    DOCKERHUB_CREDENTIALS = credentials('dockerhubcredentials')
+  }
+  stages {
+      stage('Github Trigger jenkins') {
+      steps {
+        checkout scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[credentialsId: 'github', url: 'https://github.com/satish-shrote/nodeapp.git']])
+      }
+    }
+    stage('Build') {
+      steps {
+        sh 'docker build -t liligogo/liligogo:$BUILD_NUMBER .'
+        echo 'Build Image Completed'  
+      }
+    }
+    stage('Login') {
+      steps {
+        sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
+        echo 'Login Completed'
+      }
+    }
+    stage('Push') {
+      steps {
+        sh 'docker push liligogo/liligogo:$BUILD_NUMBER'
+        echo 'Push Image Completed' 
+      }
+    }
+    post {
+      always {
+        sh 'docker logout'
+      }
+    }
+    
+    stage('github checkout') {
+            steps {
+                checkout scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[credentialsId: 'github', url: 'https://github.com/satish-shrote/gcp-gke']])
+            }
+        }
+    stage('Terraform init') {
+            steps {
+                sh 'terraform init'
+            }
+        }   
+    stage('Terraform plan') {
+            steps {
+                sh 'terraform plan'
+            }
+        }
+    stage('Terraform apply') {
+            steps {
+                sh 'terraform apply --auto-approve'
+            }
+        } 
+    }   
+}
