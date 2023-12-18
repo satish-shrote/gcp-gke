@@ -30,31 +30,10 @@ pipeline {
         echo 'Push Image Completed' 
       }
     }
-    post {
-      always {
-        sh 'docker logout'
-      }
+  }
+  post {
+    always {
+      sh 'docker logout'
     }
-    
-    stage('github checkout') {
-            steps {
-                checkout scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[credentialsId: 'github', url: 'https://github.com/satish-shrote/gcp-gke']])
-            }
-        }
-    stage('Terraform init') {
-            steps {
-                sh 'terraform init'
-            }
-        }   
-    stage('Terraform plan') {
-            steps {
-                sh 'terraform plan'
-            }
-        }
-    stage('Terraform apply') {
-            steps {
-                sh 'terraform apply --auto-approve'
-            }
-        } 
-    }   
+  }
 }
