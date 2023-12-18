@@ -1,0 +1,26 @@
+pipeline {
+  agent any
+  options {
+    buildDiscarder(logRotator(numToKeepStr: '5'))
+  }
+    stages {
+        stage('github checkout') {
+            steps {
+                checkout scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[credentialsId: 'github', url: 'https://github.com/satish-shrote/gcp-gke']])
+            }
+        }
+        stage('Terraform init') {
+            steps {
+                sh 'terraform init'
+            }
+        }
+        
+    stage('Terraform plan') {
+            steps {
+                sh 'terraform plan'
+            }
+        }
+    }
+}
+
+
