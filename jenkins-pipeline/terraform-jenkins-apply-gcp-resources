@@ -1,0 +1,44 @@
+pipeline {
+  agent any
+  environment {
+    CLOUDSDK_CORE_PROJECT='cobalt-compound-408209'
+    CLIENT_EMAIL='satish@cobalt-compound-408209.iam.gserviceaccount.com'
+  }
+  stages {
+       stage('test'){
+            steps{
+              withCredentials([file(credentialsId: 'gcloud-creds', variable: 'GCLOUD_CREDS')]) {
+                sh '''
+		        gcloud version
+		        gcloud auth activate-service-account --key-file="$GCLOUD_CREDS"
+		        gcloud compute zones list
+            	'''
+               }
+           }
+       }
+        stage('github checkout') {
+                 steps {
+                     checkout scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[credentialsId: 'github', url: 'https://github.com/satish-shrote/gcp-gke']])
+                }
+            }
+        stage('Initialize'){
+            steps{
+                
+                sh 'terraform init -upgrade'
+            
+            }
+        }
+        stage('terraform destroy') {
+            steps {
+                echo "Terraform apply --force"
+                sh ('terraform apply --lock=false --auto-approve')
+            }
+        }
+    }
+    post{
+    always {  
+	sh 'gcloud auth revoke $CLIENT_EMAIL'     
+      }      
+   } 
+}
+
